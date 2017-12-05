@@ -1,15 +1,8 @@
 # Livy Docker image
-Start by building a binary distribution :
+dockerfile-maven plugin in assembly module is used to build the docker image.
+The docker image build is included in the package phase so running the following on the parent pom will build the image 
 ```
 mvn -U clean package -DskipITs -DskipTests -P targz
-```
-Copy the generated artifact to the docker context directory :
-```
-cp assembly/target/livy-0.5.0-incubating-SNAPSHOT-bin.tar.gz docker/
-```
-Build the docker image :
-```
-docker build -t talend/livy:0.5.0-SNAPSHOT .
 ```
 Start Livy container  :
 ```
@@ -29,7 +22,6 @@ Get our custom spark : https://artifacts-zl.talend.com/nexus/content/repositorie
 Unzip the tar and build the docker image using the `sparkbase_Dockerfile
 
 # TODO
-- Replace manual copy and build by https://github.com/spotify/dockerfile-maven to integrate the docker image build with the Maven lifecycle
 - Automate base image build (spark base image)
 - Add a dependencies layer
 

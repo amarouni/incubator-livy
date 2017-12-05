@@ -1,15 +1,15 @@
 FROM registry.datapwn.com/talend/spark:1.6.2-talend-5
 MAINTAINER amarouni@talend.com
 
-ENV LIVY_VERSION 0.5.0-incubating-SNAPSHOT
+ARG LIVY_VERSION
 ENV SPARK_VERSION 1.6.2-talend-5
 ENV SPARK_HOME /opt/spark
 ENV LIVY_PORT 8998
 
-ADD livy*gz /opt
-
+ADD target/livy-"${LIVY_VERSION}"-bin.tar.gz /opt
 RUN mkdir /opt/livy-"${LIVY_VERSION}"-bin/logs
-ADD livy.conf /opt/livy-"${LIVY_VERSION}"-bin/conf/livy.conf
+ADD min_livy.conf /opt/livy-"${LIVY_VERSION}"-bin/conf/livy.conf
+
 EXPOSE $LIVY_PORT
 CMD /opt/livy-"${LIVY_VERSION}"-bin/bin/livy-server
 
