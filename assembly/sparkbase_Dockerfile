@@ -1,0 +1,7 @@
+FROM java:8-jre-alpine
+MAINTAINER amarouni@talend.com
+
+# basic alpine packages
+RUN apk update && apk add bash && apk add curl && apk add ca-certificates wget && update-ca-certificates && apk add openssl && apk add libc6-compat && apk add krb5
+
+COPY spark-1.6.2-bin-talend-spark /opt/spar
