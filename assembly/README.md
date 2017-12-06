@@ -6,7 +6,8 @@ mvn -U clean package -DskipITs -DskipTests -P targz
 ```
 Start Livy container  :
 ```
-docker run -p 8998:8998 -d talend/livy:0.5.0-SNAPSHOT
+LIVY_VERSION=0.5.0-incubating-SNAPSHOT
+docker run -d -p 8998:8998 --env LIVY_VERSION=${LIVY_VERSION} -it talend/livy:${LIVY_VERSION}
 ```
 Run a smoke test :
 ```
