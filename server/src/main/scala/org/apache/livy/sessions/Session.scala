@@ -17,20 +17,20 @@
 
 package org.apache.livy.sessions
 
-import java.io.InputStream
+import java.io.{File, InputStream}
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
-
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
+
+import scala.util.Try
 
 object Session {
   trait RecoveryMetadata { val id: Int }
@@ -69,7 +69,7 @@ object Session {
       .map { key => (key -> Nil) }.toMap
 
     val userLists = confLists ++ Map(
-      LivyConf.SPARK_JARS -> jars,
+      LivyConf.SPARK_JARS -> listFiles(jars, true),
       LivyConf.SPARK_FILES -> files,
       LivyConf.SPARK_ARCHIVES -> archives,
       LivyConf.SPARK_PY_FILES -> pyFiles)
@@ -129,6 +129,33 @@ object Session {
     }
 
     resolved
+  }
+
+  def listFiles(paths : Seq[String], recursive: Boolean): Seq[String] = {
+    println(paths)
+    paths.flatMap(listFiles(_, recursive))
+  }
+
+  def listFiles(base: String, recursive: Boolean): Seq[String] = {
+    val allFiles = listFiles(new File(new URI(base)), recursive)
+    println(allFiles)
+    allFiles
+      .map(x => new URI("file", null, x.getAbsolutePath, null).toString)
+  }
+
+  def listFiles(base: File, recursive: Boolean): Seq[File] = {
+    val files = base.listFiles
+    // TODO: use scala-esque code, avoid nulls
+    if(files != null) {
+      val result = files.filter(_.isFile)
+      result ++
+        files
+          .filter(_.isDirectory)
+          .filter(_ => recursive)
+          .flatMap(listFiles(_, recursive))
+    } else {
+      Seq()
+    }
   }
 }
 
