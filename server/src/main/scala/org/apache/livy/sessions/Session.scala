@@ -68,22 +68,35 @@ object Session {
     val confLists: Map[String, Seq[String]] = livyConf.sparkFileLists
       .map { key => (key -> Nil) }.toMap
 
-    val filesJars: Seq[String] = listFiles(jars, true)
+    val jarFiles: Seq[String] = listFiles(jars, true)
   //  System.err.println("All files: " + filesJars)
 
-    val filesWithCorrectUri: Seq[String] =
+   System.err.println("Conf is: " + livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER))
+
+    val jarFilesFromLocalConf : Seq[String] = {
+      if (livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER)!=null) {
+        listFiles("file://"+ livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER), recursive = true)
+      } else {
+         Seq[String]()
+      }
+    }
+
+    val allJarFiles = jarFiles.toSet.union(jarFilesFromLocalConf.toSet)
+    System.err.println("Number of dependencies: " + allJarFiles.size)
+
+    val ordinaryFiles: Seq[String] =
       files.map(file => new URI("file", null, new File(new URI(file)).getAbsolutePath, null).toString)
 
   //  System.err.println("File with correct uri: " + filesWithCorrectUri)
 
-    val detectedCommonFiles: Seq[String] = filesJars.toSet.intersect(filesWithCorrectUri.toSet).toSeq
+    val detectedCommonFiles: Seq[String] = allJarFiles.toSet.intersect(ordinaryFiles.toSet).toSeq
  //   System.err.println("Detected common files: " + detectedCommonFiles)
 
   //  System.err.println("File with correct uri: " + filesWithCorrectUri.toSet.diff(detectedCommonFiles.toSet).toSeq)
 
     val userLists = confLists ++ Map(
-      LivyConf.SPARK_JARS -> filesJars.toSet.diff(detectedCommonFiles.toSet).toSeq,
-      LivyConf.SPARK_FILES -> filesWithCorrectUri.toSet.diff(detectedCommonFiles.toSet).toSeq,
+      LivyConf.SPARK_JARS -> allJarFiles.toSet.diff(detectedCommonFiles.toSet).toSeq,
+      LivyConf.SPARK_FILES -> ordinaryFiles.toSet.diff(detectedCommonFiles.toSet).toSeq,
       LivyConf.SPARK_ARCHIVES -> archives,
       LivyConf.SPARK_PY_FILES -> pyFiles)
 

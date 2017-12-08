@@ -158,6 +158,9 @@ object LivyConf {
   val SPARK_ARCHIVES = "spark.yarn.dist.archives"
   val SPARK_PY_FILES = "spark.submit.pyFiles"
 
+  // Specific DataStreams integration
+  val DATASTREAMS_DEPENDENCIES_FOLDER = "livy.job.dependencies.folder"
+
   /**
    * These are Spark configurations that contain lists of files that the user can add to
    * their jobs in one way or another. Livy needs to pre-process these to make sure the
