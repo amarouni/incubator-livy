@@ -62,12 +62,17 @@ object BatchSession extends Logging {
     val appTag = s"livy-batch-$id-${Random.alphanumeric.take(8).mkString}"
 
     def createSparkApp(s: BatchSession): SparkApp = {
+      require(request.file != null, "File is required.")
+    //  System.err.println("requested files: " + request.files)
+    //  System.err.println("requested file: " + request.file)
+
       val conf = SparkApp.prepareSparkConf(
         appTag,
         livyConf,
         prepareConf(
-          request.conf, request.jars, request.files, request.archives, request.pyFiles, livyConf))
-      require(request.file != null, "File is required.")
+          request.conf, request.jars, request.files ++ Seq(request.file), request.archives, request.pyFiles, livyConf))
+
+      // System.err.println("Conf is: " + conf)
 
       val builder = new SparkProcessBuilder(livyConf)
       builder.conf(conf)
