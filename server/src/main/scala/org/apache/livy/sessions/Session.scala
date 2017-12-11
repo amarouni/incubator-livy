@@ -17,20 +17,20 @@
 
 package org.apache.livy.sessions
 
-import java.io.InputStream
+import java.io.{File, InputStream}
 import java.net.{URI, URISyntaxException}
 import java.security.PrivilegedExceptionAction
-import java.util.UUID
+import java.util.{Collections, UUID}
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.security.UserGroupInformation
-
 import org.apache.livy.{LivyConf, Logging, Utils}
 import org.apache.livy.utils.AppInfo
+
+import scala.util.Try
 
 object Session {
   trait RecoveryMetadata { val id: Int }
@@ -68,9 +68,35 @@ object Session {
     val confLists: Map[String, Seq[String]] = livyConf.sparkFileLists
       .map { key => (key -> Nil) }.toMap
 
+    val jarFiles: Seq[String] = listFiles(jars, true)
+  //  System.err.println("All files: " + filesJars)
+
+   System.err.println("Conf is: " + livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER))
+
+    val jarFilesFromLocalConf : Seq[String] = {
+      if (livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER)!=null) {
+        listFiles("file://"+ livyConf.get(LivyConf.DATASTREAMS_DEPENDENCIES_FOLDER), recursive = true)
+      } else {
+         Seq[String]()
+      }
+    }
+
+    val allJarFiles = jarFiles.toSet.union(jarFilesFromLocalConf.toSet)
+    System.err.println("Number of dependencies: " + allJarFiles.size)
+
+    val ordinaryFiles: Seq[String] =
+      files.map(file => new URI("file", null, new File(new URI(file)).getAbsolutePath, null).toString)
+
+  //  System.err.println("File with correct uri: " + filesWithCorrectUri)
+
+    val detectedCommonFiles: Seq[String] = allJarFiles.toSet.intersect(ordinaryFiles.toSet).toSeq
+ //   System.err.println("Detected common files: " + detectedCommonFiles)
+
+  //  System.err.println("File with correct uri: " + filesWithCorrectUri.toSet.diff(detectedCommonFiles.toSet).toSeq)
+
     val userLists = confLists ++ Map(
-      LivyConf.SPARK_JARS -> jars,
-      LivyConf.SPARK_FILES -> files,
+      LivyConf.SPARK_JARS -> allJarFiles.toSet.diff(detectedCommonFiles.toSet).toSeq,
+      LivyConf.SPARK_FILES -> ordinaryFiles.toSet.diff(detectedCommonFiles.toSet).toSeq,
       LivyConf.SPARK_ARCHIVES -> archives,
       LivyConf.SPARK_PY_FILES -> pyFiles)
 
@@ -129,6 +155,31 @@ object Session {
     }
 
     resolved
+  }
+
+  def listFiles(paths : Seq[String], recursive: Boolean): Seq[String] = {
+    paths.flatMap(listFiles(_, recursive))
+  }
+
+  def listFiles(base: String, recursive: Boolean): Seq[String] = {
+    val allFiles = listFiles(new File(new URI(base)), recursive)
+    allFiles
+      .map(x => new URI("file", null, x.getAbsolutePath, null).toString)
+  }
+
+  def listFiles(base: File, recursive: Boolean): Seq[File] = {
+    val files = base.listFiles
+    // TODO: use scala-esque code, avoid nulls
+    if(files != null) {
+      val result = files.filter(_.isFile)
+      result ++
+        files
+          .filter(_.isDirectory)
+          .filter(_ => recursive)
+          .flatMap(listFiles(_, recursive))
+    } else {
+      Seq(base)
+    }
   }
 }
 

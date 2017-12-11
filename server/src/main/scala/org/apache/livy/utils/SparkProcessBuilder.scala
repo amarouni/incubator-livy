@@ -199,6 +199,7 @@ class SparkProcessBuilder(livyConf: LivyConf) extends Logging {
       .map("'" + _.replace("'", "\\'") + "'")
       .mkString(" ")
 
+   // System.err.println(s"!!!Application is running, args are: $argsString")
     info(s"Running $argsString")
 
     val pb = new ProcessBuilder(arguments.asJava)
